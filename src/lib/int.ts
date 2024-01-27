@@ -1458,12 +1458,12 @@ class UInt8 extends Struct({
    * UInt8.from(3).lessThanOrEqual(UInt8.from(5));
    * ```
    */
-  lessThanOrEqual(y: UInt8): Bool {
+  lessThanOrEqual(y: UInt8 | bigint | number): Bool {
     let y_ = UInt8.from(y);
     if (this.value.isConstant() && y_.value.isConstant()) {
       return Bool(this.toBigInt() <= y_.toBigInt());
     } else {
-      let xMinusY = this.value.sub(y.value).seal();
+      let xMinusY = this.value.sub(y_.value).seal();
       let yMinusX = xMinusY.neg();
       let xMinusYFits = RangeCheck.isInRangeN(UInt8.NUM_BITS, xMinusY);
       let yMinusXFits = RangeCheck.isInRangeN(UInt8.NUM_BITS, yMinusX);
@@ -1488,8 +1488,10 @@ class UInt8 extends Struct({
     let y_ = UInt8.from(y);
     if (this.value.isConstant() && y_.value.isConstant()) {
       return Bool(this.toBigInt() < y_.toBigInt());
+    } else {
+      return this.lessThanOrEqual(y_).and(this.value.equals(y_.value).not());
     }
-    throw Error('Not implemented');
+    // throw Error('Not implemented');
   }
 
   /**
