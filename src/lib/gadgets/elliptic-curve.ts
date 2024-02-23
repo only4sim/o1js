@@ -1,4 +1,4 @@
-import { inverse, mod } from '../../bindings/crypto/finite_field.js';
+import { inverse, mod } from '../../bindings/crypto/finite-field.js';
 import { Field } from '../field.js';
 import { Provable } from '../provable.js';
 import { assert, exists } from './common.js';
@@ -13,12 +13,13 @@ import {
   CurveAffine,
   affineAdd,
   affineDouble,
-} from '../../bindings/crypto/elliptic_curve.js';
+} from '../../bindings/crypto/elliptic-curve.js';
 import { Bool } from '../bool.js';
-import { provable } from '../circuit_value.js';
+import { provable } from '../circuit-value.js';
 import { assertPositiveInteger } from '../../bindings/crypto/non-negative.js';
 import { arrayGet, assertBoolean } from './basic.js';
 import { sliceField3 } from './bit-slices.js';
+import { Hashed } from '../provable-types/packed.js';
 
 // external API
 export { EllipticCurve, Point, Ecdsa };
@@ -227,7 +228,7 @@ function verifyEcdsa(
     G?: { windowSize: number; multiples?: Point[] };
     P?: { windowSize: number; multiples?: Point[] };
     ia?: point;
-  } = { G: { windowSize: 4 }, P: { windowSize: 3 } }
+  } = { G: { windowSize: 4 }, P: { windowSize: 4 } }
 ) {
   // constant case
   if (
@@ -413,6 +414,14 @@ function multiScalarMul(
     sliceField3(s, { maxBits, chunkSize: windowSizes[i] })
   );
 
+  // hash points to make array access more efficient
+  // a Point is 6 field elements, the hash is just 1 field element
+  const HashedPoint = Hashed.create(Point.provable);
+
+  let hashedTables = tables.map((table) =>
+    table.map((point) => HashedPoint.hash(point))
+  );
+
   ia ??= initialAggregator(Curve);
   let sum = Point.from(ia);
 
@@ -426,7 +435,11 @@ function multiScalarMul(
         let sjP =
           windowSize === 1
             ? points[j]
-            : arrayGetGeneric(Point.provable, tables[j], sj);
+            : arrayGetGeneric(
+                HashedPoint.provable,
+                hashedTables[j],
+                sj
+              ).unhash();
 
         // ec addition
         let added = add(sum, sjP, Curve);

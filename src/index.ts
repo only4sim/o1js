@@ -9,7 +9,7 @@ export {
 } from './lib/foreign-field.js';
 export { createForeignCurve, ForeignCurve } from './lib/foreign-curve.js';
 export { createEcdsa, EcdsaSignature } from './lib/foreign-ecdsa.js';
-export { Poseidon, TokenSymbol } from './lib/hash.js';
+export { Poseidon, TokenSymbol, ProvableHashable } from './lib/hash.js';
 export { Keccak } from './lib/keccak.js';
 export { Hash } from './lib/hashes-combined.js';
 
@@ -21,8 +21,7 @@ export type {
   FlexibleProvable,
   FlexibleProvablePure,
   InferProvable,
-  Unconstrained,
-} from './lib/circuit_value.js';
+} from './lib/circuit-value.js';
 export {
   CircuitValue,
   prop,
@@ -31,15 +30,28 @@ export {
   provable,
   provablePure,
   Struct,
-} from './lib/circuit_value.js';
+  Unconstrained,
+} from './lib/circuit-value.js';
 export { Provable } from './lib/provable.js';
 export { Circuit, Keypair, public_, circuitMain } from './lib/circuit.js';
 export { UInt32, UInt64, Int64, Sign, UInt8 } from './lib/int.js';
 export { Bytes } from './lib/provable-types/provable-types.js';
+export { Packed, Hashed } from './lib/provable-types/packed.js';
 export { Gadgets } from './lib/gadgets/gadgets.js';
 export { Types } from './bindings/mina-transaction/types.js';
 
+export {
+  MerkleList,
+  MerkleListIterator,
+} from './lib/provable-types/merkle-list.js';
+
 export * as Mina from './lib/mina.js';
+export {
+  type Transaction,
+  type PendingTransaction,
+  type IncludedTransaction,
+  type RejectedTransaction,
+} from './lib/mina/transaction.js';
 export type { DeployArgs } from './lib/zkapp.js';
 export {
   SmartContract,
@@ -50,7 +62,7 @@ export {
 } from './lib/zkapp.js';
 export { state, State, declareState } from './lib/state.js';
 
-export type { JsonProof } from './lib/proof_system.js';
+export type { JsonProof } from './lib/proof-system.js';
 export {
   Proof,
   SelfProof,
@@ -59,7 +71,7 @@ export {
   Undefined,
   Void,
   VerificationKey,
-} from './lib/proof_system.js';
+} from './lib/proof-system.js';
 export { Cache, CacheHeader } from './lib/proof-system/cache.js';
 
 export {
@@ -68,9 +80,15 @@ export {
   AccountUpdate,
   Permissions,
   ZkappPublicInput,
-} from './lib/account_update.js';
+  TransactionVersion,
+  AccountUpdateForest,
+  AccountUpdateTree,
+} from './lib/account-update.js';
 
-export type { TransactionStatus } from './lib/fetch.js';
+export { TokenAccountUpdateIterator } from './lib/mina/token/forest-iterator.js';
+export { TokenContract } from './lib/mina/token/token-contract.js';
+
+export type { TransactionStatus } from './lib/mina/graphql.js';
 export {
   fetchAccount,
   fetchLastBlock,
@@ -87,29 +105,27 @@ export {
 export * as Encryption from './lib/encryption.js';
 export * as Encoding from './bindings/lib/encoding.js';
 export { Character, CircuitString } from './lib/string.js';
-export { MerkleTree, MerkleWitness } from './lib/merkle_tree.js';
-export { MerkleMap, MerkleMapWitness } from './lib/merkle_map.js';
+export { MerkleTree, MerkleWitness } from './lib/merkle-tree.js';
+export { MerkleMap, MerkleMapWitness } from './lib/merkle-map.js';
 
 export { Nullifier } from './lib/nullifier.js';
 
-import { ExperimentalZkProgram, ZkProgram } from './lib/proof_system.js';
+import { ExperimentalZkProgram, ZkProgram } from './lib/proof-system.js';
 export { ZkProgram };
 
 export { Crypto } from './lib/crypto.js';
 
+export type { NetworkId } from './mina-signer/mina-signer.js';
+
+export { setNumberOfWorkers } from './lib/proof-system/workers.js';
+
 // experimental APIs
-import { Callback } from './lib/zkapp.js';
-import { createChildAccountUpdate } from './lib/account_update.js';
 import { memoizeWitness } from './lib/provable.js';
 export { Experimental };
 
 const Experimental_ = {
-  Callback,
-  createChildAccountUpdate,
   memoizeWitness,
 };
-
-type Callback_<Result> = Callback<Result>;
 
 /**
  * This module exposes APIs that are unstable, in the sense that the API surface is expected to change.
@@ -120,10 +136,7 @@ namespace Experimental {
    * The old `Experimental.ZkProgram` API has been deprecated in favor of the new `ZkProgram` top-level import.
    */
   export let ZkProgram = ExperimentalZkProgram;
-  export let createChildAccountUpdate = Experimental_.createChildAccountUpdate;
   export let memoizeWitness = Experimental_.memoizeWitness;
-  export let Callback = Experimental_.Callback;
-  export type Callback<Result> = Callback_<Result>;
 }
 
 Error.stackTraceLimit = 100000;

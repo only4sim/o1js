@@ -1,4 +1,4 @@
-import { HashInput, ProvableExtended, Struct } from './circuit_value.js';
+import { HashInput, ProvableExtended, Struct } from './circuit-value.js';
 import { Snarky } from '../snarky.js';
 import { Field } from './core.js';
 import { createHashHelpers } from './hash-generic.js';
@@ -14,6 +14,7 @@ export { Poseidon, TokenSymbol };
 
 // internal API
 export {
+  ProvableHashable,
   HashInput,
   HashHelpers,
   emptyHashWithPrefix,
@@ -22,7 +23,11 @@ export {
   packToFields,
   emptyReceiptChainHash,
   hashConstant,
+  isHashable,
 };
+
+type Hashable<T> = { toInput: (x: T) => HashInput; empty: () => T };
+type ProvableHashable<T> = Provable<T> & Hashable<T>;
 
 class Sponge {
   #sponge: unknown;
@@ -62,6 +67,17 @@ const Poseidon = {
     return MlFieldArray.from(newState) as [Field, Field, Field];
   },
 
+  hashWithPrefix(prefix: string, input: Field[]) {
+    let init = Poseidon.update(Poseidon.initialState(), [
+      prefixToField(prefix),
+    ]);
+    return Poseidon.update(init, input)[0];
+  },
+
+  initialState(): [Field, Field, Field] {
+    return [Field(0), Field(0), Field(0)];
+  },
+
   hashToGroup(input: Field[]) {
     if (isConstant(input)) {
       let result = PoseidonBigint.hashToGroup(toBigints(input));
@@ -96,8 +112,22 @@ const Poseidon = {
     return { x, y: { x0, x1 } };
   },
 
-  initialState(): [Field, Field, Field] {
-    return [Field(0), Field(0), Field(0)];
+  /**
+   * Hashes a provable type efficiently.
+   *
+   * ```ts
+   * let skHash = Poseidon.hashPacked(PrivateKey, secretKey);
+   * ```
+   *
+   * Note: Instead of just doing `Poseidon.hash(value.toFields())`, this
+   * uses the `toInput()` method on the provable type to pack the input into as few
+   * field elements as possible. This saves constraints because packing has a much
+   * lower per-field element cost than hashing.
+   */
+  hashPacked<T>(type: Hashable<T>, value: T) {
+    let input = type.toInput(value);
+    let packed = packToFields(input);
+    return Poseidon.hash(packed);
   },
 
   Sponge,
@@ -149,6 +179,15 @@ function packToFields({ fields = [], packed = [] }: HashInput) {
   }
   packedBits.push(currentPackedField);
   return fields.concat(packedBits);
+}
+
+function isHashable<T>(obj: any): obj is Hashable<T> {
+  if (!obj) {
+    return false;
+  }
+  const hasToInput = 'toInput' in obj && typeof obj.toInput === 'function';
+  const hasEmpty = 'empty' in obj && typeof obj.empty === 'function';
+  return hasToInput && hasEmpty;
 }
 
 const TokenSymbolPure: ProvableExtended<

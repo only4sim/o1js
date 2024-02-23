@@ -13,12 +13,14 @@ echo ""
 echo "Running integration tests against the real Mina network."
 echo ""
 
-./run src/examples/zkapps/hello_world/run_live.ts --bundle | add_prefix "HELLO_WORLD" &
+./run src/examples/zkapps/hello-world/run-live.ts --bundle | add_prefix "HELLO_WORLD" &
 HELLO_WORLD_PROC=$!
-./run src/examples/zkapps/dex/run_live.ts --bundle | add_prefix "DEX" &
+./run src/examples/zkapps/dex/run-live.ts --bundle | add_prefix "DEX" &
 DEX_PROC=$!
-./run src/examples/fetch_live.ts --bundle | add_prefix "FETCH" &
+./run src/examples/fetch-live.ts --bundle | add_prefix "FETCH" &
 FETCH_PROC=$!
+./run src/tests/transaction-flow.ts --bundle | add_prefix "TRANSACTION_FLOW" &
+TRANSACTION_FLOW_PROC=$!
 
 # Wait for each process and capture their exit statuses
 FAILURE=0
@@ -40,6 +42,13 @@ wait $FETCH_PROC
 if [ $? -ne 0 ]; then
   echo ""
   echo "FETCH test failed."
+  echo ""
+  FAILURE=1
+fi
+wait $TRANSACTION_FLOW_PROC
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "TRANSACTION_FLOW test failed."
   echo ""
   FAILURE=1
 fi
